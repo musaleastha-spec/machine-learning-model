@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Intelligence AI Studio</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 850px;
+        }
+        .card {
+            background: #1e293b;
+            padding: 35px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid #334155;
+        }
+        .header {
+            margin-bottom: 25px;
+        }
+        h1 {
+            color: #6366f1;
+            margin: 0 0 8px 0;
+            font-size: 28px;
+        }
+        p {
+            color: #94a3b8;
+            margin: 0;
+            font-size: 14px;
+        }
+        
+        /* Navigation Tabs */
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 10px;
+        }
+        .tab-btn {
+            background: transparent;
+            color: #94a3b8;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .tab-btn.active {
+            background: #334155;
+            color: #38bdf8;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Drag and Drop Zone */
+        .drop-zone {
+            border: 2px dashed #6366f1;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            background: #0f172a;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+        .drop-zone.dragover {
+            background: #1e1b4b;
+            border-color: #818cf8;
+            transform: scale(1.01);
+        }
+        .drop-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        .file-name {
+            color: #38bdf8;
+            font-weight: 600;
+            margin-top: 12px;
+            word-break: break-all;
+        }
+        #fileInput {
+            display: none;
+        }
+
+        /* Form Controls */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-bottom: 4px;
+        }
+        input[type="number"] {
+            background: #334155;
+            border: 1px solid #475569;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+        }
+        input[type="number"]:focus {
+            border-color: #6366f1;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.2s ease;
+        }
+        .submit-btn:hover {
+            background: #4f46e5;
+        }
+        .submit-btn:disabled {
+            background: #475569;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        /* Results & Audio Preview Box */
+        .result-box {
+            margin-top: 25px;
+            padding: 20px;
+            background: #0f172a;
+            border-radius: 10px;
+            border: 1px solid #334155;
+            display: none;
+        }
+        .result-box h3 {
+            margin: 0;
+            color: #f8fafc;
+        }
+        .prediction-value {
+            color: #38bdf8;
+            font-size: 22px;
+            font-weight: bold;
+        }
+        audio {
+            width: 100%;
+            margin-top: 15px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <div class="header">
+            <h1>🎙️ Voice Intelligence Studio</h1>
+            <p>Classify audio files or raw acoustic feature vectors in real time.</p>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="tab-buttons">
+            <button class="tab-btn active" onclick="switchTab('audioTab')">🎵 Audio Upload (.wav/.mp3)</button>
+            <button class="tab-btn" onclick="switchTab('featureTab')">🎛️ Manual Parameters (20 Features)</button>
+        </div>
+
+        <!-- TAB 1: Audio Upload -->
+        <div id="audioTab" class="tab-content active">
+            <div class="drop-zone" id="dropZone">
+                <div class="drop-icon">📁</div>
+                <div>Drag & drop your <b>.wav</b> or <b>.mp3</b> file here, or <span style="color:#6366f1; text-decoration:underline;">browse files</span></div>
+                <div class="file-name" id="fileNameDisplay"></div>
+                <input type="file" id="fileInput" accept=".wav,.mp3">
+            </div>
+            
+            <audio id="audioPreview" controls style="display: none;"></audio>
+            <button id="uploadAudioBtn" class="submit-btn" style="margin-top:15px;" disabled>Analyze Audio Recording</button>
+        </div>
+
+        <!-- TAB 2: Manual 20 Acoustic Features Input -->
+        <div id="featureTab" class="tab-content">
+            <form id="featureForm">
+                <div class="grid" id="featureGrid"></div>
+                <button type="submit" id="submitFeaturesBtn" class="submit-btn">Predict From Parameters</button>
+            </form>
+        </div>
+
+        <!-- Prediction Result Card -->
+        <div id="resultBox" class="result-box">
+            <h3>Classification Result: <span id="predictionOutput" class="prediction-value">--</span></h3>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Configured to your active ngrok static development domain URL
+    const BASE_URL = "https://precut-canopener-void.ngrok-free.dev";
+
+    const featureNames = [
+        "meanfreq", "sd", "median", "Q25", "Q75", "IQR", "skew", "kurt",
+        "sp.ent", "sfm", "mode", "centroid", "meanfun", "minfun", "maxfun",
+        "meandom", "mindom", "maxdom", "dfrange", "modindx"
+    ];
+
+    // Tab Switching Functionality
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(tabId).classList.add('active');
+        event.currentTarget.classList.add('active');
+        
+        // Hide result box when switching modes
+        document.getElementById("resultBox").style.display = "none";
+    }
+
+    // Populate Tab 2 Feature Inputs
+    const grid = document.getElementById("featureGrid");
+    featureNames.forEach(name => {
+        const div = document.createElement("div");
+        div.className = "input-group";
+        div.innerHTML = `
+            <label>${name}</label>
+            <input type="number" step="0.00001" id="${name}" value="0.00000" required>
+        `;
+        grid.appendChild(div);
+    });
+
+    // Handle Drag & Drop File Uploads
+    const dropZone = document.getElementById("dropZone");
+    const fileInput = document.getElementById("fileInput");
+    const fileNameDisplay = document.getElementById("fileNameDisplay");
+    const audioPreview = document.getElementById("audioPreview");
+    const uploadAudioBtn = document.getElementById("uploadAudioBtn");
+    let selectedFile = null;
+
+    dropZone.addEventListener("click", () => fileInput.click());
+
+    fileInput.addEventListener("change", (e) => {
+        if (e.target.files.length > 0) handleFileSelect(e.target.files[0]);
+    });
+
+    ["dragenter", "dragover"].forEach(name => {
+        dropZone.addEventListener(name, (e) => {
+            e.preventDefault();
+            dropZone.classList.add("dragover");
+        }, false);
+    });
+
+    ["dragleave", "drop"].forEach(name => {
+        dropZone.addEventListener(name, (e) => {
+            e.preventDefault();
+            dropZone.classList.remove("dragover");
+        }, false);
+    });
+
+    dropZone.addEventListener("drop", (e) => {
+        const files = e.dataTransfer.files;
+        if (files.length > 0) handleFileSelect(files[0]);
+    });
+
+    function handleFileSelect(file) {
+        if (!file.name.endsWith(".wav") && !file.name.endsWith(".mp3")) {
+            alert("Please select a valid .wav or .mp3 file.");
+            return;
+        }
+        selectedFile = file;
+        fileNameDisplay.innerText = `Selected File: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+        
+        // Enable audio preview player
+        audioPreview.src = URL.createObjectURL(file);
+        audioPreview.style.display = "block";
+        
+        uploadAudioBtn.disabled = false;
+    }
+
+    // Handler 1: Process Raw Audio Uploads
+    uploadAudioBtn.addEventListener("click", async () => {
+        if (!selectedFile) return;
+
+        const API_URL = `${BASE_URL}/predict-audio`;
+        uploadAudioBtn.innerText = "Extracting Features & Classifying...";
+        uploadAudioBtn.disabled = true;
+
+        const formData = new FormData();
+        formData.append("file", selectedFile); // Parameter key MUST match main.py 'file' parameter
+
+        try {
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: {
+                    "ngrok-skip-browser-warning": "true" // Skips ngrok landing warning
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                document.getElementById("predictionOutput").innerText = data.prediction;
+                document.getElementById("resultBox").style.display = "block";
+            } else {
+                alert(`Error (${response.status}): ${JSON.stringify(data.detail || data)}`);
+            }
+        } catch (err) {
+            console.error("Fetch Exception:", err);
+            alert("Network error: Failed to communicate with FastAPI in Colab.");
+        } finally {
+            uploadAudioBtn.innerText = "Analyze Audio Recording";
+            uploadAudioBtn.disabled = false;
+        }
+    });
+
+    // Handler 2: Process Tabular Feature Inputs
+    document.getElementById("featureForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        
+        const API_URL = `${BASE_URL}/predict`;
+        const submitBtn = document.getElementById("submitFeaturesBtn");
+        submitBtn.innerText = "Calculating...";
+        submitBtn.disabled = true;
+
+        const featureValues = featureNames.map(name => parseFloat(document.getElementById(name).value));
+
+        try {
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "ngrok-skip-browser-warning": "true"
+                },
+                body: JSON.stringify({ features: featureValues })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                document.getElementById("predictionOutput").innerText = data.prediction;
+                document.getElementById("resultBox").style.display = "block";
+            } else {
+                alert(`Error (${response.status}): ${JSON.stringify(data.detail || data)}`);
+            }
+        } catch (err) {
+            console.error("Fetch Exception:", err);
+            alert("Network error: Unable to reach your FastAPI server.");
+        } finally {
+            submitBtn.innerText = "Predict From Parameters";
+            submitBtn.disabled = false;
+        }
+    });
+</script>
+
+</body>
+</html>
